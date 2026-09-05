@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIH 2026 - Adaptive Variable Resolution 2.5D LiDAR Mapping</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Playful rounded display font, used only for the plain-language pipeline explainer -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+
+  <!-- Custom Configuration & Styles -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              dark: '#07090e',
+              card: '#0e131f',
+              border: '#1e293b',
+              cyan: '#06b6d4',
+              blue: '#3b82f6',
+              purple: '#a855f7',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              rose: '#f43f5e'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Responsive Chart Container Rules */
+    .chart-container {
+      position: relative;
+      width: 100%;
+      max-width: 650px;
+      margin-left: auto;
+      margin-right: auto;
+      height: 320px;
+      max-height: 400px;
+    }
+    @media (min-width: 768px) {
+      .chart-container {
+        height: 360px;
+      }
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #07090e;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #06b6d4;
+    }
+
+    /* Pulse Glow Animations */
+    @keyframes cyanGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(6, 182, 212, 0.2); }
+      50% { box-shadow: 0 0 25px rgba(6, 182, 212, 0.5); }
+    }
+    .glow-active {
+      animation: cyanGlow 2.5s infinite;
+    }
+
+    /* Playful cartoon typography, scoped to the pipeline explainer only */
+    .font-toon {
+      font-family: 'Baloo 2', 'Segoe UI Rounded', system-ui, sans-serif;
+    }
+
+    @keyframes toonPop {
+      0% { transform: scale(0.9); }
+      50% { transform: scale(1.03); }
+      100% { transform: scale(1); }
+    }
+    .toon-pop {
+      animation: toonPop 0.35s ease-out;
+    }
+  </style>
+</head>
+<body class="bg-[#07090e] text-slate-200 font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-200 min-h-screen">
+
+  <!-- TOP HEADER / BRANDING -->
+  <header class="sticky top-0 z-50 bg-[#07090e]/90 backdrop-blur-md border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-black text-black text-lg shadow-lg shadow-cyan-500/20">
+          ⚡
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-black text-white text-base tracking-tight">SIH 2026</span>
+            <span class="px-2 py-0.5 text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 rounded-full">PS: SIH2026053</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden sm:block">Adaptive Variable Resolution 2.5D LiDAR Mapping</p>
+        </div>
+      </div>
+
+      <!-- Quick Nav Anchors -->
+      <nav class="flex items-center gap-2 sm:gap-4 text-xs font-semibold">
+        <a href="#simulator" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition">LiDAR Simulator</a>
+        <a href="#pipeline" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition">5-Stage Pipeline</a>
+        <a href="#benchmarks" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition">Benchmarks</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO METRICS STRIP -->
+  <section class="border-b border-slate-800/60 bg-slate-900/40 py-5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+        <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/40 transition">
+          <div class="text-2xl sm:text-3xl font-black text-cyan-400 font-mono tracking-tight">97% Saved</div>
+          <div class="text-[11px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">RAM Memory (1.8GB → 45MB)</div>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/40 transition">
+          <div class="text-2xl sm:text-3xl font-black text-emerald-400 font-mono tracking-tight">45 FPS</div>
+          <div class="text-[11px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">Real-Time Processing</div>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/40 transition">
+          <div class="text-2xl sm:text-3xl font-black text-blue-400 font-mono tracking-tight">5 cm</div>
+          <div class="text-[11px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">Near-Field Grid Precision</div>
+        </div>
+        <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/40 transition">
+          <div class="text-2xl sm:text-3xl font-black text-purple-400 font-mono tracking-tight">&lt;100 ms</div>
+          <div class="text-[11px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">Target Edge Latency</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-12">
+
+    <!-- SECTION 1: MULTI-PLATFORM LIDAR SIMULATOR -->
+    <section id="simulator" class="space-y-4">
+      <div class="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+          <span class="text-[10px] font-mono font-bold uppercase tracking-widest text-cyan-400">Interactive Simulation Engine</span>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2 mt-0.5">
+            <span>🎯</span> Autonomous Platform Perception Simulator
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">
+            Observe real-time 360° LiDAR scanning across diverse autonomous domain platforms with live variable-resolution foveated ring mapping.
+          </p>
+        </div>
+
+        <!-- Vehicle Platform Switcher -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <button onclick="setAgentMode('car')" id="agent-car" class="agent-btn active px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20">
+            <span>🚗</span> <span>Car (ADAS)</span>
+          </button>
+          <button onclick="setAgentMode('drone')" id="agent-drone" class="agent-btn px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white">
+            <span>🛸</span> <span>Drone (UAV)</span>
+          </button>
+          <button onclick="setAgentMode('plane')" id="agent-plane" class="agent-btn px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white">
+            <span>✈️</span> <span>Aeroplane</span>
+          </button>
+          <button onclick="setAgentMode('robot')" id="agent-robot" class="agent-btn px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white">
+            <span>🤖</span> <span>Robot (AGV)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- SIMULATOR BOARD: RADAR CANVAS + ANALYTICS PANEL -->
+      <div class="grid lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- CANVAS CONTAINER -->
+        <div class="lg:col-span-7 bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col items-center shadow-2xl relative">
+          
+          <div class="w-full flex items-center justify-between mb-3 text-xs font-mono">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+              <span id="agent-title" class="font-bold text-white">Autonomous Vehicle</span>
+              <span class="text-slate-600">|</span>
+              <span id="agent-tagline" class="text-slate-400">Urban ADAS & Traffic Perception</span>
+            </div>
+            <span class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 text-[10px]">
+              2.5D Semantic LiDAR
+            </span>
+          </div>
+
+          <!-- Radar Canvas Box -->
+          <div class="relative aspect-square w-full max-w-[440px] flex items-center justify-center">
+            <canvas id="simCanvas" width="440" height="440" class="w-full h-full rounded-xl bg-[#04060a] border border-slate-900 cursor-crosshair"></canvas>
+          </div>
+
+          <!-- Simulator Control Bar -->
+          <div class="w-full mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div class="flex items-center gap-2">
+              <button onclick="toggleScan()" id="pauseBtn" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium flex items-center gap-1.5 transition">
+                <span id="pauseIcon">⏸️</span> <span id="pauseTxt">Pause Sweep</span>
+              </button>
+              <div class="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[11px] font-mono">
+                <span class="text-slate-400">Speed:</span>
+                <button onclick="setScanSpeed(1)" class="spd-btn text-cyan-400 font-bold px-1.5 py-0.5 rounded">1x</button>
+                <button onclick="setScanSpeed(2)" class="spd-btn text-slate-400 px-1.5 py-0.5 rounded">2x</button>
+                <button onclick="setScanSpeed(3)" class="spd-btn text-slate-400 px-1.5 py-0.5 rounded">3x</button>
+              </div>
+            </div>
+
+            <!-- Foveated vs Uniform Grid Toggle -->
+            <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+              <button onclick="setGridMode('foveated')" id="grid-foveated" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-cyan-500 text-black shadow">
+                Adaptive 2.5D (Our Work)
+              </button>
+              <button onclick="setGridMode('uniform')" id="grid-uniform" class="px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-400 hover:text-white">
+                Uniform 3D (Legacy)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOVEATED MAP STATS & RINGS BREAKDOWN -->
+        <div class="lg:col-span-5 space-y-4">
+          
+          <!-- Mode Comparison Box -->
+          <div id="grid-mode-card" class="p-5 rounded-2xl border transition-all bg-gradient-to-br from-cyan-950/30 to-slate-900/80 border-cyan-800/50">
+            <div class="flex items-center justify-between mb-3">
+              <h3 id="mode-card-title" class="font-bold text-white text-sm flex items-center gap-2">
+                <span>⚡</span> Quadtree Foveated Grid Active
+              </h3>
+              <span id="mode-card-badge" class="text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                97% MEM SAVED
+              </span>
+            </div>
+
+            <div class="space-y-2.5 font-mono text-xs">
+              <div class="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60">
+                <span class="text-slate-400">Memory Per Frame:</span>
+                <span id="stat-mem" class="font-bold text-sm text-cyan-400">~45 MB</span>
+              </div>
+              <div class="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60">
+                <span class="text-slate-400">Processing Rate:</span>
+                <span id="stat-fps" class="font-bold text-sm text-emerald-400">45 FPS (Real-time)</span>
+              </div>
+              <div class="flex justify-between items-center bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60">
+                <span class="text-slate-400">Max Perception Distance:</span>
+                <span class="font-bold text-white">0 - 100 meters</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Foveated 3-Ring Allocation -->
+          <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl space-y-3">
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+              <span>Foveated Multi-Ring Allocation</span>
+              <span class="text-[10px] text-cyan-400 font-mono">0-100m Range</span>
+            </h4>
+
+            <div class="p-3 rounded-xl bg-cyan-950/30 border border-cyan-800/40 flex items-center justify-between">
+              <div>
+                <div class="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                  Near Ring (0 - 10 m)
+                </div>
+                <div id="near-desc" class="text-[11px] text-slate-400 mt-0.5">High detail for curbs, pedestrians & obstacles</div>
+              </div>
+              <div class="text-right font-mono">
+                <div class="text-xs font-bold text-cyan-400">5 cm</div>
+                <div class="text-[9px] text-slate-500">cell size</div>
+              </div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-blue-950/30 border border-blue-800/40 flex items-center justify-between">
+              <div>
+                <div class="text-xs font-bold text-blue-300 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                  Mid Ring (10 - 50 m)
+                </div>
+                <div id="mid-desc" class="text-[11px] text-slate-400 mt-0.5">Balanced resolution for drivable road terrain</div>
+              </div>
+              <div class="text-right font-mono">
+                <div class="text-xs font-bold text-blue-400">20 cm</div>
+                <div class="text-[9px] text-slate-500">cell size</div>
+              </div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-slate-800/40 border border-slate-700/40 flex items-center justify-between">
+              <div>
+                <div class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                  Far Ring (50 - 100 m)
+                </div>
+                <div id="far-desc" class="text-[11px] text-slate-400 mt-0.5">Coarse grid for background structures</div>
+              </div>
+              <div class="text-right font-mono">
+                <div class="text-xs font-bold text-slate-300">50 cm</div>
+                <div class="text-[9px] text-slate-500">cell size</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detected Objects Table -->
+          <div class="bg-slate-900/60 border border-slate-800 p-4 rounded-2xl">
+            <div class="text-xs font-bold text-white mb-2 flex items-center justify-between">
+              <span>Tracked Dynamic Objects</span>
+              <span id="obstacle-count" class="text-[10px] text-cyan-400 font-mono">5 Objects</span>
+            </div>
+            <div id="obstacle-list" class="grid grid-cols-2 gap-2">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 2: ANIMATED 5-STEP PIPELINE INSPECTOR -->
+    <section id="pipeline" class="space-y-6 pt-4">
+      <div class="text-center max-w-3xl mx-auto space-y-2">
+        <span class="text-[10px] font-mono font-bold uppercase tracking-widest text-cyan-400">Interactive Technical Architecture</span>
+        <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight">5-Step Deep Perception Pipeline Visualizer</h2>
+        <p class="text-xs sm:text-sm text-slate-400">
+          Click on any step below to launch its dedicated interactive live animation and inspect how raw point clouds are transformed into a memory-efficient 2.5D semantic grid.
+        </p>
+      </div>
+
+      <!-- 5 STEP CARDS NAVIGATION -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        
+        <!-- STEP 01 -->
+        <button onclick="selectPipelineStep(1)" id="step-btn-1" class="step-card active p-4 rounded-2xl border text-left transition-all flex flex-col justify-between bg-cyan-950/40 border-cyan-500 shadow-xl shadow-cyan-500/10 scale-[1.02]">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-7 h-7 rounded-lg text-xs font-mono font-bold flex items-center justify-center bg-cyan-500 text-black">01</span>
+              <span class="text-lg">📡</span>
+            </div>
+            <h4 class="font-bold text-white text-xs mb-1">Raw LiDAR Input</h4>
+            <p class="text-[10px] text-slate-400 leading-relaxed">XYZ Spatial Coordinates + Intensity (XYZI) points stream.</p>
+          </div>
+          <div class="mt-4 pt-2 border-t border-slate-800 flex items-center text-[10px] text-cyan-400 font-bold">
+            <span id="step-status-1">Active Stage</span> <span class="ml-auto">→</span>
+          </div>
+        </button>
+
+        <!-- STEP 02 -->
+        <button onclick="selectPipelineStep(2)" id="step-btn-2" class="step-card p-4 rounded-2xl border text-left transition-all flex flex-col justify-between bg-slate-900/60 border-slate-800 hover:border-slate-700">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-7 h-7 rounded-lg text-xs font-mono font-bold flex items-center justify-center bg-slate-800 text-slate-400">02</span>
+              <span class="text-lg">🎛️</span>
+            </div>
+            <h4 class="font-bold text-white text-xs mb-1">Pre-Processing</h4>
+            <p class="text-[10px] text-slate-400 leading-relaxed">Outlier removal, ground plane isolation & motion vectors.</p>
+          </div>
+          <div class="mt-4 pt-2 border-t border-slate-800 flex items-center text-[10px] text-slate-400 font-bold">
+            <span id="step-status-2">Click to inspect</span> <span class="ml-auto">→</span>
+          </div>
+        </button>
+
+        <!-- STEP 03 -->
+        <button onclick="selectPipelineStep(3)" id="step-btn-3" class="step-card p-4 rounded-2xl border text-left transition-all flex flex-col justify-between bg-slate-900/60 border-slate-800 hover:border-slate-700">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-7 h-7 rounded-lg text-xs font-mono font-bold flex items-center justify-center bg-slate-800 text-slate-400">03</span>
+              <span class="text-lg">🧠</span>
+            </div>
+            <h4 class="font-bold text-white text-xs mb-1">Deep Perception</h4>
+            <p class="text-[10px] text-slate-400 leading-relaxed">PointNet++ & Sparse 3D CNN AI class segmentation.</p>
+          </div>
+          <div class="mt-4 pt-2 border-t border-slate-800 flex items-center text-[10px] text-slate-400 font-bold">
+            <span id="step-status-3">Click to inspect</span> <span class="ml-auto">→</span>
+          </div>
+        </button>
+
+        <!-- STEP 04 -->
+        <button onclick="selectPipelineStep(4)" id="step-btn-4" class="step-card p-4 rounded-2xl border text-left transition-all flex flex-col justify-between bg-slate-900/60 border-slate-800 hover:border-slate-700">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-7 h-7 rounded-lg text-xs font-mono font-bold flex items-center justify-center bg-slate-800 text-slate-400">04</span>
+              <span class="text-lg">🥞</span>
+            </div>
+            <h4 class="font-bold text-white text-xs mb-1">Foveated Projection</h4>
+            <p class="text-[10px] text-slate-400 leading-relaxed">Quadtree variable-resolution 5cm/20cm/50cm mapping.</p>
+          </div>
+          <div class="mt-4 pt-2 border-t border-slate-800 flex items-center text-[10px] text-slate-400 font-bold">
+            <span id="step-status-4">Click to inspect</span> <span class="ml-auto">→</span>
+          </div>
+        </button>
+
+        <!-- STEP 05 -->
+        <button onclick="selectPipelineStep(5)" id="step-btn-5" class="step-card p-4 rounded-2xl border text-left transition-all flex flex-col justify-between bg-slate-900/60 border-slate-800 hover:border-slate-700">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-7 h-7 rounded-lg text-xs font-mono font-bold flex items-center justify-center bg-slate-800 text-slate-400">05</span>
+              <span class="text-lg">✅</span>
+            </div>
+            <h4 class="font-bold text-white text-xs mb-1">2.5D Semantic Map</h4>
+            <p class="text-[10px] text-slate-400 leading-relaxed">Elevation bounds, occupancy grid & semantic output.</p>
+          </div>
+          <div class="mt-4 pt-2 border-t border-slate-800 flex items-center text-[10px] text-slate-400 font-bold">
+            <span id="step-status-5">Click to inspect</span> <span class="ml-auto">→</span>
+          </div>
+        </button>
+
+      </div>
+
+      <!-- ANIMATED DISPLAY CANVAS & DETAIL PANEL FOR SELECTED STEP -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 grid lg:grid-cols-12 gap-6 items-center shadow-2xl">
+        
+        <!-- DEDICATED ANIMATION CANVAS FOR PIPELINE STAGE -->
+        <div class="lg:col-span-7 bg-slate-950 border border-slate-800/80 rounded-xl p-4 flex flex-col items-center relative overflow-hidden">
+          <div class="w-full flex items-center justify-between mb-2 text-xs">
+            <span id="pipeline-canvas-title" class="font-bold text-cyan-400 font-mono">Stage 01: Raw Point Cloud Scanning Animation</span>
+            <span id="pipeline-canvas-tag" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">
+              🎬 Animated Explainer
+            </span>
+          </div>
+
+          <!-- Dynamic Stage Visualizer Canvas -->
+          <div class="relative w-full aspect-[4/3] max-w-[480px] flex items-center justify-center">
+            <canvas id="pipelineCanvas" width="480" height="360" class="w-full h-full rounded-lg bg-[#030509] border border-slate-900"></canvas>
+          </div>
+
+          <!-- Step Specific Controls -->
+          <div id="pipeline-ctrl-bar" class="w-full mt-3 pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs gap-2">
+            <!-- Dynamic Controls inserted via JS -->
+          </div>
+        </div>
+
+        <!-- STAGE EXPLANATION & TECHNICAL DATA CARD -->
+        <div class="lg:col-span-5 space-y-4">
+          <div>
+            <div id="pipeline-stage-num" class="text-xs font-mono text-cyan-400 font-bold mb-1">STAGE 01 OF 05</div>
+            <h3 id="pipeline-stage-title" class="text-xl font-bold text-white">1. Raw LiDAR Point Cloud Acquisition</h3>
+
+            <!-- Plain-language explainer bubble -- what's happening, in everyday words -->
+            <div id="pipeline-simple-explain" class="font-toon mt-3 p-3.5 rounded-2xl bg-gradient-to-br from-amber-400/15 to-amber-500/5 border-2 border-dashed border-amber-400/40 text-amber-200 text-sm font-medium leading-snug">
+              💡 In plain words: Placeholder
+            </div>
+
+            <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mt-3 block">🔬 The technical version</span>
+            <p id="pipeline-stage-desc" class="text-xs text-slate-400 leading-relaxed mt-1">
+              Captures raw spatial returns (X, Y, Z, Reflectance Intensity) directly from 64 or 128-beam automotive LiDAR sensors. Point density can reach over 1.2M points per second, causing massive compute bottlenecks if not structured properly.
+            </p>
+          </div>
+
+          <!-- Interactive Attribute Inspection Box -->
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800/80 font-mono text-xs space-y-2">
+            <div class="text-slate-400 border-b border-slate-800 pb-2 flex justify-between">
+              <span>LIVE STAGE METRICS</span>
+              <span id="pipeline-metric-badge" class="text-cyan-400 font-bold">[150 MB/s Input]</span>
+            </div>
+            <div id="pipeline-metrics-list" class="space-y-1.5 text-[11px]">
+              <!-- Populated dynamically via JS -->
+            </div>
+          </div>
+
+          <!-- Technology Badges -->
+          <div class="space-y-1.5">
+            <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">Stage Tech Stack</span>
+            <div id="pipeline-tech-tags" class="flex flex-wrap gap-1.5">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- SECTION 3: BENCHMARKS & HARDWARE FEASIBILITY -->
+    <section id="benchmarks" class="space-y-6 pt-4">
+      <div class="text-center max-w-3xl mx-auto space-y-2">
+        <span class="text-[10px] font-mono font-bold uppercase tracking-widest text-cyan-400">Quantitative Feasibility</span>
+        <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Performance Benchmarks & Memory Reduction</h2>
+        <p class="text-xs sm:text-sm text-slate-400">
+          Comparing standard 2D/3D grids with our variable-resolution foveated 2.5D architecture.
+        </p>
+      </div>
+
+      <!-- CHART & COMPARISON TABLE GRID -->
+      <div class="grid lg:grid-cols-12 gap-6 items-center">
+        
+        <!-- CHART.JS CONTAINER -->
+        <div class="lg:col-span-6 bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-white text-sm flex items-center gap-2">
+              <span>📊</span> Memory Usage Comparison (MB / Frame)
+            </h3>
+            <span class="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950 border border-emerald-800 px-2 py-0.5 rounded">
+              97% Lower Memory
+            </span>
+          </div>
+
+          <!-- Responsive Chart Container wrapping <canvas> -->
+          <div class="chart-container">
+            <canvas id="benchmarkChart"></canvas>
+          </div>
+        </div>
+
+        <!-- BENCHMARK TABLE -->
+        <div class="lg:col-span-6 bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <h3 class="font-bold text-white text-sm flex items-center gap-2">
+            <span>⚡</span> Architectural Benchmark Matrix
+          </h3>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-sans">
+              <thead class="bg-slate-950 text-slate-400 font-mono text-[10px] uppercase">
+                <tr>
+                  <th class="p-3">Approach</th>
+                  <th class="p-3">RAM Memory</th>
+                  <th class="p-3">Frame Rate</th>
+                  <th class="p-3">3D Height Data</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/60 font-medium">
+                <tr class="hover:bg-slate-800/30">
+                  <td class="p-3 text-slate-300 font-bold">Standard 2D Grid</td>
+                  <td class="p-3 text-slate-400 font-mono">12 MB</td>
+                  <td class="p-3 text-emerald-400 font-mono">60 FPS</td>
+                  <td class="p-3 text-rose-400">❌ None</td>
+                </tr>
+                <tr class="hover:bg-slate-800/30">
+                  <td class="p-3 text-slate-300 font-bold">Uniform 3D Grid (Legacy)</td>
+                  <td class="p-3 text-rose-400 font-mono font-bold">1,800 MB (1.8GB)</td>
+                  <td class="p-3 text-rose-400 font-mono">12 FPS</td>
+                  <td class="p-3 text-emerald-400">✅ Full Voxels</td>
+                </tr>
+                <tr class="bg-cyan-950/40 border-l-4 border-l-cyan-400">
+                  <td class="p-3 text-white font-bold flex items-center gap-1.5">
+                    <span class="text-cyan-400 font-black">★</span> Our Foveated 2.5D Grid
+                  </td>
+                  <td class="p-3 text-cyan-300 font-mono font-bold">45 MB</td>
+                  <td class="p-3 text-emerald-400 font-mono font-bold">45 FPS</td>
+                  <td class="p-3 text-cyan-300">✅ 2.5D Elevation</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Hardware Deployment Info -->
+          <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between text-xs font-mono">
+            <div>
+              <div class="text-slate-400">Target Hardware Platform:</div>
+              <div class="text-cyan-400 font-bold mt-0.5">NVIDIA Jetson AGX Orin / RTX Onboard GPUs</div>
+            </div>
+            <span class="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+              EMBEDDED READY
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 4: BENEFICIARIES & SDG IMPACT -->
+    <section class="space-y-6 pt-4">
+      <div class="text-center max-w-3xl mx-auto space-y-2">
+        <span class="text-[10px] font-mono font-bold uppercase tracking-widest text-cyan-400">Real-World Deployment</span>
+        <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Beneficiaries & UN SDG Alignment</h2>
+        <p class="text-xs sm:text-sm text-slate-400">
+          How our lightweight 2.5D perception system impacts defense, automotive, logistics, and smart city infrastructure.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-5">
+        
+        <div class="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/30 transition space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-xl text-cyan-400">
+            🚗
+          </div>
+          <h4 class="font-bold text-white text-sm">Autonomous Vehicles & ADAS</h4>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Delivers 5cm near-field detection for curbs, pedestrians, and potholes without overloading vehicle ECUs.
+          </p>
+          <span class="inline-block px-2.5 py-1 rounded-md bg-slate-950 text-[10px] font-mono text-cyan-400 border border-slate-800">
+            SDG 11: Sustainable Cities
+          </span>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/30 transition space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-xl text-blue-400">
+            🛡️
+          </div>
+          <h4 class="font-bold text-white text-sm">Defence & DRDO Operations</h4>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Allows unmanned ground vehicles (UGVs) and tactical drones to map rugged off-road terrain without relying on cloud servers.
+          </p>
+          <span class="inline-block px-2.5 py-1 rounded-md bg-slate-950 text-[10px] font-mono text-blue-400 border border-slate-800">
+            SDG 9: Industry & Innovation
+          </span>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/30 transition space-y-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-xl text-emerald-400">
+            🏭
+          </div>
+          <h4 class="font-bold text-white text-sm">Automated Logistics & AGVs</h4>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Facilitates warehouse robots moving goods across multi-level floors with obstacle elevation tracking.
+          </p>
+          <span class="inline-block px-2.5 py-1 rounded-md bg-slate-950 text-[10px] font-mono text-emerald-400 border border-slate-800">
+            SDG 3: Health & Road Safety
+          </span>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-800/80 bg-slate-950 py-6 mt-16 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div>
+        <span class="font-bold text-slate-300">Smart India Hackathon 2026</span> • Problem Statement ID: <span class="text-cyan-400 font-mono">SIH2026053</span>
+      </div>
+      <div class="text-[11px] text-slate-600">
+        Theme: Autonomous Vehicles & AI Perception (Deep Learning & Spatial Computing)
+      </div>
+    </div>
+  </footer>
+
+  <!-- COMPLETE JAVASCRIPT LOGIC & ANIMATION ENGINE -->
+  <script>
+    // GLOBAL APPLICATION STATE
+    let currentAgent = 'car';
+    let currentGridMode = 'foveated';
+    let isScanning = true;
+    let scanSpeed = 1;
+    let scanAngle = 0;
+    let activePipelineStep = 1;
+
+    // SIMULATOR AGENT DATA
+    const agentConfigs = {
+      car: {
+        name: 'Autonomous Vehicle',
+        tagline: 'Urban ADAS & Traffic Perception',
+        nearDesc: 'Pedestrians, Curbs, Potholes',
+        midDesc: 'Lane boundaries, Drivable road area',
+        farDesc: 'Distant traffic, Buildings',
+        accent: '#06b6d4',
+        obstacles: [
+          { x: -28, y: -38, type: 'Vehicle', label: 'Sedan (3.2m/s)', col: '#06b6d4' },
+          { x: 16, y: -20, type: 'Human', label: 'Pedestrian', col: '#f59e0b' },
+          { x: -12, y: -12, type: 'Structure', label: 'Road Curb', col: '#64748b' },
+          { x: 42, y: -58, type: 'Building', label: 'Building Wall', col: '#3b82f6' },
+          { x: -50, y: 30, type: 'Vegetation', label: 'Tree Line', col: '#10b981' }
+        ]
+      },
+      drone: {
+        name: 'Aerial Drone (UAV)',
+        tagline: 'Top-Down Terrain & Canopy Mapping',
+        nearDesc: 'Powerlines, Tree branches, Low structures',
+        midDesc: 'Roof grids, Topography elevation',
+        farDesc: 'Ground terrain contours',
+        accent: '#3b82f6',
+        obstacles: [
+          { x: -18, y: -25, type: 'Building', label: 'Rooftop Edge', col: '#3b82f6' },
+          { x: 28, y: 32, type: 'Vegetation', label: 'Dense Canopy', col: '#10b981' },
+          { x: -38, y: 48, type: 'Hazard', label: 'Telecom Tower', col: '#f43f5e' },
+          { x: 8, y: -14, type: 'Hazard', label: 'High Voltage Wire', col: '#f59e0b' }
+        ]
+      },
+      plane: {
+        name: 'Tactical Aviation',
+        tagline: 'High-Speed Runway & Altitude Mapping',
+        nearDesc: 'Runway debris, Threshold lights',
+        midDesc: 'Taxiway markings & obstacles',
+        farDesc: 'Mountain ridges, Airport hangars',
+        accent: '#a855f7',
+        obstacles: [
+          { x: 0, y: -65, type: 'Ground', label: 'Runway Center', col: '#a855f7' },
+          { x: 38, y: -42, type: 'Building', label: 'Hangar Complex', col: '#3b82f6' },
+          { x: -42, y: -28, type: 'Vehicle', label: 'Taxiing Aircraft', col: '#ec4899' },
+          { x: 48, y: 58, type: 'Terrain', label: 'Mountain Ridge', col: '#10b981' }
+        ]
+      },
+      robot: {
+        name: 'Automated Robot (AGV)',
+        tagline: 'Indoor Warehouse & Factory Navigation',
+        nearDesc: 'Pallets, Factory workers, Moving forks',
+        midDesc: 'Storage racks, Support pillars',
+        farDesc: 'Facility perimeter walls',
+        accent: '#10b981',
+        obstacles: [
+          { x: -14, y: -16, type: 'Obstacle', label: 'Cargo Pallet', col: '#f59e0b' },
+          { x: 10, y: -10, type: 'Human', label: 'Factory Worker', col: '#f43f5e' },
+          { x: -32, y: 38, type: 'Structure', label: 'Storage Rack A4', col: '#10b981' },
+          { x: 32, y: 28, type: 'Structure', label: 'Support Pillar', col: '#64748b' }
+        ]
+      }
+    };
+
+    // PIPELINE STAGES DATA
+    const pipelineStages = {
+      1: {
+        title: "1. Raw LiDAR Point Cloud Acquisition",
+        simple: "The sensor shines out thousands of tiny, invisible flashes of light every second and times how long each one takes to bounce back. That tells it exactly how far away everything around it is — like a bat using echolocation, but with light instead of sound.",
+        desc: "Captures raw spatial returns (X, Y, Z, Reflectance Intensity) directly from 64 or 128-beam automotive LiDAR sensors. Point density can reach over 1.2M points per second, causing massive compute bottlenecks if not structured properly.",
+        metricBadge: "[150 MB/s Input Rate]",
+        metrics: [
+          ["Data Format:", "Unstructured XYZI Point Cloud"],
+          ["Scan Rate:", "120,000 Points / Frame"],
+          ["Intensity Range:", "0 - 255 Reflectance"],
+          ["Raw Bandwidth:", "~150 MB / sec"]
+        ],
+        techTags: ["64-Beam LiDAR", "Velodyne / Ouster", "XYZI Stream", "Raw Point Cloud"],
+        controls: `
+          <button onclick="togglePipelineCanvasNoise()" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-cyan-400 font-toon font-bold">✨ Show/Hide Glitchy Readings</button>
+          <span class="text-slate-400 font-mono">Stream: <strong class="text-emerald-400">ACTIVE</strong></span>
+        `
+      },
+      2: {
+        title: "2. Pre-Processing & Motion Compensation",
+        simple: "Not every flash of light comes back clean — some readings are noisy or bounce off dust and glare. This step sweeps away the messy, unreliable dots, and figures out which points are simply \"the ground,\" so the system doesn't confuse a flat road with an obstacle.",
+        desc: "Filters sensor noise, isolates terrain ground planes using normal estimation, downsamples redundant returns, and compensates for ego-vehicle movement using IMU & GPS integration.",
+        metricBadge: "[14.2% Outliers Filtered]",
+        metrics: [
+          ["Outlier Filtering:", "Radius Outlier Removal (ROR)"],
+          ["Ground Normalization:", "RANSAC Surface Fitting"],
+          ["Ego-Motion Correction:", "IMU / GPS Sync (100 Hz)"],
+          ["Cleaned Points:", "102,800 Points / Frame"]
+        ],
+        techTags: ["RANSAC Ground", "IMU Integration", "Open3D / C++", "Noise Removal"],
+        controls: `
+          <button onclick="togglePipelineGroundPlane()" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-cyan-400 font-toon font-bold">🧹 Sweep Away the Mess</button>
+          <span class="text-slate-400 font-mono">Noise: <strong class="text-cyan-400">CLEANED</strong></span>
+        `
+      },
+      3: {
+        title: "3. Deep Learning Semantic Segmentation",
+        simple: "Now an AI \"brain\" looks at every remaining dot and decides what it actually belongs to — is this a car, a person, a tree, or the road? It labels each point with a category, the same way you'd instantly recognise a friend's face in a crowd.",
+        desc: "Runs Sparse 3D Convolutional Neural Networks (MinkowskiEngine / PointNet++) to classify every 3D point into semantic classes (Road, Pedestrian, Vehicle, Vegetation, Building).",
+        metricBadge: "[92.4% mIoU Accuracy]",
+        metrics: [
+          ["Neural Backbone:", "Sparse 3D CNN / PointNet++"],
+          ["Dataset Trained:", "SemanticKITTI"],
+          ["Inference Latency:", "18 ms per scan"],
+          ["Semantic Classes:", "Road, Vehicle, Human, Tree, Pole"]
+        ],
+        techTags: ["PyTorch", "MinkowskiEngine", "PointNet++", "SemanticKITTI", "CUDA"],
+        controls: `
+          <button onclick="triggerNeuralWave()" class="px-2.5 py-1 rounded-full bg-cyan-500 text-black font-toon font-bold shadow">🧠 Re-run the AI Brain</button>
+          <span class="text-slate-400 font-mono">Classes: <strong class="text-purple-400">5 DETECTED</strong></span>
+        `
+      },
+      4: {
+        title: "4. Adaptive Quadtree Foveated Grid Engine",
+        simple: "Just like your own eyes, the system pays very close attention to what's nearby (down to 5 cm, sharp enough to spot a curb) but only needs a rough idea of what's far away (50 cm blocks, since a distant building doesn't need pinpoint detail). This trick is exactly why it saves so much memory.",
+        desc: "Dynamically projects labeled points into radial ring zones: 5cm near-field resolution scaling down to 50cm far-field resolution, preserving critical safety details near the ego-vehicle.",
+        metricBadge: "[97% Compression]",
+        metrics: [
+          ["Near Zone (0-10m):", "5 cm Grid Resolution"],
+          ["Mid Zone (10-50m):", "20 cm Grid Resolution"],
+          ["Far Zone (50-100m):", "50 cm Grid Resolution"],
+          ["Active Quad Cells:", "24,500 Cells (vs 820,000 Uniform)"]
+        ],
+        techTags: ["Quadtree Decomposition", "Foveated Ring Grid", "Variable Resolution", "Spatial Computing"],
+        controls: `
+          <button onclick="toggleFoveatedRingsView()" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-cyan-400 font-toon font-bold">🔍 Highlight the Zoom Rings</button>
+          <span class="text-slate-400 font-mono">Resolution: <strong class="text-cyan-400">ADAPTIVE</strong></span>
+        `
+      },
+      5: {
+        title: "5. Multi-Layered 2.5D Elevation & Occupancy Output",
+        simple: "Finally, everything is stacked into one tidy, lightweight map: how tall each patch of ground is, whether it's empty or blocked, and what it's made of. This finished map is small enough to run instantly on the vehicle's own onboard computer — no internet needed.",
+        desc: "Generates a lightweight multi-layer grid storing Min Height (Z_min), Max Height (Z_max), Height Variance, Occupancy Probability, and Semantic Class for real-time motion planning.",
+        metricBadge: "[45 MB / Frame Output]",
+        metrics: [
+          ["Height Layer (Z):", "Z_min, Z_max, Variance"],
+          ["Occupancy Layer:", "Free / Occupied Probability"],
+          ["Semantic Layer:", "Highest Confidence AI Class"],
+          ["Target Edge Hardware:", "NVIDIA Jetson AGX Orin"]
+        ],
+        techTags: ["2.5D Height Maps", "Occupancy Grid", "Real-Time Motion Planning", "Jetson Ready"],
+        controls: `
+          <button onclick="toggle25DLayerMode()" class="px-2.5 py-1 rounded-full bg-emerald-500 text-black font-toon font-bold shadow">🏗️ Cycle the Map View</button>
+          <span class="text-slate-400 font-mono">Status: <strong class="text-emerald-400">READY FOR CONTROL</strong></span>
+        `
+      }
+    };
+
+    // Friendly, plain-language titles shown above the cartoon canvas for each stage
+    const pipelineCanvasTitles = {
+      1: "📡 Stage 1: Sensing the World with Light",
+      2: "🧹 Stage 2: Cleaning Up the Data",
+      3: "🧠 Stage 3: The AI Brain Names Things",
+      4: "🔍 Stage 4: Zooming In Where It Matters",
+      5: "🗺️ Stage 5: Building the Final Map"
+    };
+
+    // PIPELINE INTERACTIVE STATE
+    let pipelineCanvasNoise = true;
+    let pipelineGroundPlane = true;
+    let neuralWaveProgress = 1.0;
+    let foveatedRingsHighlight = true;
+    let layer25DView = 'composite'; // 'composite', 'height', 'occupancy'
+
+    // ==========================================
+    // INITIALIZATION & EVENT LISTENERS
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      initRadarSim();
+      initPipelineCanvas();
+      initBenchmarkChart();
+      updateAgentUI();
+      selectPipelineStep(1);
+    });
+
+    // ==========================================
+    // SECTION 1: RADAR SIMULATOR LOGIC
+    // ==========================================
+    function initRadarSim() {
+      const canvas = document.getElementById('simCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      function draw() {
+        const width = canvas.width;
+        const height = canvas.height;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const maxRadius = centerX - 15;
+        const agent = agentConfigs[currentAgent];
+
+        ctx.clearRect(0, 0, width, height);
+
+        // Radar Background Grid & Concentric Circles
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+
+        const rings = [
+          { r: maxRadius * 0.2, label: '10m (5cm)', col: '#06b6d4' },
+          { r: maxRadius * 0.6, label: '50m (20cm)', col: '#3b82f6' },
+          { r: maxRadius * 0.95, label: '100m (50cm)', col: '#64748b' }
+        ];
+
+        rings.forEach((ring, idx) => {
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, ring.r, 0, Math.PI * 2);
+          ctx.strokeStyle = ring.col + (currentGridMode === 'foveated' ? '55' : '22');
+          ctx.setLineDash(idx === 0 ? [] : [4, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          ctx.fillStyle = ring.col;
+          ctx.font = '10px monospace';
+          ctx.fillText(ring.label, centerX + 6, centerY - ring.r + 12);
+        });
+
+        // Crosshairs
+        ctx.strokeStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.moveTo(centerX, 10); ctx.lineTo(centerX, height - 10);
+        ctx.moveTo(10, centerY); ctx.lineTo(width - 10, centerY);
+        ctx.stroke();
+
+        // Grid Cell Overlay (Foveated vs Uniform)
+        if (currentGridMode === 'foveated') {
+          // Fine inner grid
+          const innerSize = 12;
+          ctx.strokeStyle = 'rgba(6, 182, 212, 0.12)';
+          for (let x = centerX - rings[0].r; x <= centerX + rings[0].r; x += innerSize) {
+            for (let y = centerY - rings[0].r; y <= centerY + rings[0].r; y += innerSize) {
+              if (Math.hypot(x - centerX, y - centerY) <= rings[0].r) {
+                ctx.strokeRect(x, y, innerSize, innerSize);
+              }
+            }
+          }
+          // Coarse outer grid
+          const outerSize = 32;
+          ctx.strokeStyle = 'rgba(100, 116, 139, 0.08)';
+          for (let x = 15; x < width - 15; x += outerSize) {
+            for (let y = 15; y < height - 15; y += outerSize) {
+              const dist = Math.hypot(x - centerX, y - centerY);
+              if (dist > rings[0].r && dist <= maxRadius) {
+                ctx.strokeRect(x, y, outerSize, outerSize);
+              }
+            }
+          }
+        } else {
+          // Uniform Heavy Grid
+          const uSize = 10;
+          ctx.strokeStyle = 'rgba(244, 63, 94, 0.15)';
+          for (let x = 15; x < width - 15; x += uSize) {
+            for (let y = 15; y < height - 15; y += uSize) {
+              ctx.strokeRect(x, y, uSize, uSize);
+            }
+          }
+        }
+
+        // Rotating Sweeping Radar Beam
+        if (isScanning) {
+          scanAngle = (scanAngle + 0.02 * scanSpeed) % (Math.PI * 2);
+        }
+
+        const gradient = ctx.createConicGradient(scanAngle, centerX, centerY);
+        const sweepCol = agent.accent;
+        gradient.addColorStop(0, sweepCol + 'ee');
+        gradient.addColorStop(0.08, sweepCol + '33');
+        gradient.addColorStop(0.25, 'transparent');
+        gradient.addColorStop(1, 'transparent');
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, maxRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Laser Ray Line
+        ctx.strokeStyle = sweepCol;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX + Math.cos(scanAngle) * maxRadius, centerY + Math.sin(scanAngle) * maxRadius);
+        ctx.stroke();
+
+        // Obstacles & Dynamic Point Cloud Hits
+        agent.obstacles.forEach((obs) => {
+          const obsX = centerX + (obs.x / 100) * maxRadius;
+          const obsY = centerY + (obs.y / 100) * maxRadius;
+          let obsAngle = Math.atan2(obs.y, obs.x);
+          if (obsAngle < 0) obsAngle += Math.PI * 2;
+
+          const diffAngle = Math.abs(scanAngle - obsAngle);
+          const isHit = diffAngle < 0.28 || diffAngle > (Math.PI * 2 - 0.28);
+
+          const pointCount = currentGridMode === 'foveated' ? (Math.hypot(obs.x, obs.y) < 35 ? 16 : 8) : 22;
+
+          for (let i = 0; i < pointCount; i++) {
+            const pAngle = (i / pointCount) * Math.PI * 2;
+            const pRadius = 5 + (i % 3) * 2;
+            const px = obsX + Math.cos(pAngle) * pRadius;
+            const py = obsY + Math.sin(pAngle) * pRadius;
+
+            ctx.fillStyle = obs.col;
+            ctx.beginPath();
+            ctx.arc(px, py, isHit ? 2.5 : 1.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Object Bounding Box & Label
+          ctx.strokeStyle = isHit ? '#ffffff' : obs.col + '88';
+          ctx.lineWidth = isHit ? 1.5 : 1;
+          ctx.strokeRect(obsX - 12, obsY - 12, 24, 24);
+
+          ctx.fillStyle = '#f8fafc';
+          ctx.font = '9px sans-serif';
+          ctx.fillText(obs.label, obsX - 18, obsY - 15);
+        });
+
+        // Center Ego Vehicle Sensor Node
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = agent.accent;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        requestAnimationFrame(draw);
+      }
+
+      draw();
+    }
+
+    function setAgentMode(mode) {
+      currentAgent = mode;
+      document.querySelectorAll('.agent-btn').forEach(btn => {
+        btn.classList.remove('bg-cyan-500', 'text-slate-950', 'shadow-lg', 'shadow-cyan-500/20');
+        btn.classList.add('bg-slate-800', 'text-slate-300');
+      });
+
+      const activeBtn = document.getElementById(`agent-${mode}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
+        activeBtn.classList.add('bg-cyan-500', 'text-slate-950', 'shadow-lg', 'shadow-cyan-500/20');
+      }
+
+      updateAgentUI();
+    }
+
+    function updateAgentUI() {
+      const agent = agentConfigs[currentAgent];
+      document.getElementById('agent-title').innerText = agent.name;
+      document.getElementById('agent-tagline').innerText = agent.tagline;
+      document.getElementById('near-desc').innerText = agent.nearDesc;
+      document.getElementById('mid-desc').innerText = agent.midDesc;
+      document.getElementById('far-desc').innerText = agent.farDesc;
+      document.getElementById('obstacle-count').innerText = `${agent.obstacles.length} Objects`;
+
+      const listContainer = document.getElementById('obstacle-list');
+      listContainer.innerHTML = agent.obstacles.map(obs => `
+        <div class="p-2 rounded-lg bg-slate-950 border border-slate-800 text-[11px] flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full" style="background-color: ${obs.col}"></span>
+          <div class="truncate">
+            <div class="font-bold text-slate-200 truncate">${obs.label}</div>
+            <div class="text-[9px] text-slate-500">${obs.type}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function setGridMode(mode) {
+      currentGridMode = mode;
+      const btnFoveated = document.getElementById('grid-foveated');
+      const btnUniform = document.getElementById('grid-uniform');
+      const card = document.getElementById('grid-mode-card');
+      const cardTitle = document.getElementById('mode-card-title');
+      const cardBadge = document.getElementById('mode-card-badge');
+      const statMem = document.getElementById('stat-mem');
+      const statFps = document.getElementById('stat-fps');
+
+      if (mode === 'foveated') {
+        btnFoveated.className = "px-2.5 py-1 rounded-lg text-[11px] font-bold bg-cyan-500 text-black shadow";
+        btnUniform.className = "px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-400 hover:text-white";
+        
+        card.className = "p-5 rounded-2xl border transition-all bg-gradient-to-br from-cyan-950/30 to-slate-900/80 border-cyan-800/50";
+        cardTitle.innerHTML = `<span>⚡</span> Quadtree Foveated Grid Active`;
+        cardBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+        cardBadge.innerText = "97% MEM SAVED";
+
+        statMem.className = "font-bold text-sm text-cyan-400";
+        statMem.innerText = "~45 MB";
+
+        statFps.className = "font-bold text-sm text-emerald-400";
+        statFps.innerText = "45 FPS (Real-time)";
+      } else {
+        btnUniform.className = "px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-500 text-white shadow";
+        btnFoveated.className = "px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-400 hover:text-white";
+
+        card.className = "p-5 rounded-2xl border transition-all bg-gradient-to-br from-rose-950/20 to-slate-900/80 border-rose-800/50";
+        cardTitle.innerHTML = `<span>⚠️</span> Uniform 3D Dense Grid Active`;
+        cardBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30";
+        cardBadge.innerText = "HIGH BOTTLENECK";
+
+        statMem.className = "font-bold text-sm text-rose-400";
+        statMem.innerText = "~1,800 MB (1.8 GB)";
+
+        statFps.className = "font-bold text-sm text-amber-400";
+        statFps.innerText = "12 FPS (Lagging)";
+      }
+    }
+
+    function toggleScan() {
+      isScanning = !isScanning;
+      document.getElementById('pauseIcon').innerText = isScanning ? '⏸️' : '▶️';
+      document.getElementById('pauseTxt').innerText = isScanning ? 'Pause Sweep' : 'Resume Sweep';
+    }
+
+    function setScanSpeed(spd) {
+      scanSpeed = spd;
+    }
+
+    // ==========================================
+    // SECTION 2: ANIMATED 5-STAGE PIPELINE ENGINE
+    // ==========================================
+    function selectPipelineStep(step) {
+      activePipelineStep = step;
+      const data = pipelineStages[step];
+
+      // Update Card Highlight States
+      for (let i = 1; i <= 5; i++) {
+        const card = document.getElementById(`step-btn-${i}`);
+        const status = document.getElementById(`step-status-${i}`);
+        if (i === step) {
+          card.className = "step-card active p-4 rounded-2xl border text-left transition-all flex flex-col justify-between bg-cyan-950/40 border-cyan-500 shadow-xl shadow-cyan-500/10 scale-[1.02]";
+          status.innerText = "Active Stage";
+          status.className = "text-[10px] text-cyan-400 font-bold";
+        } else {
+          card.className = "step-card p-4 rounded-2xl border text-left transition-all flex flex-col justify-between bg-slate-900/60 border-slate-800 hover:border-slate-700";
+          status.innerText = "Click to inspect";
+          status.className = "text-[10px] text-slate-400 font-bold";
+        }
+      }
+
+      // Update Stage Description Panel
+      document.getElementById('pipeline-stage-num').innerText = `STAGE 0${step} OF 05`;
+      document.getElementById('pipeline-stage-title').innerText = data.title;
+      document.getElementById('pipeline-simple-explain').innerHTML = `💡 In plain words: ${data.simple}`;
+      document.getElementById('pipeline-simple-explain').classList.remove('toon-pop');
+      // restart the pop animation on every stage change
+      void document.getElementById('pipeline-simple-explain').offsetWidth;
+      document.getElementById('pipeline-simple-explain').classList.add('toon-pop');
+      document.getElementById('pipeline-stage-desc').innerText = data.desc;
+      document.getElementById('pipeline-metric-badge').innerText = data.metricBadge;
+      document.getElementById('pipeline-canvas-title').innerText = pipelineCanvasTitles[step] || `Stage 0${step}: Animated Visualizer`;
+
+      // Metrics List
+      const metricsList = document.getElementById('pipeline-metrics-list');
+      metricsList.innerHTML = data.metrics.map(([label, val]) => `
+        <div class="flex justify-between text-slate-300">
+          <span>• ${label}</span> <span class="text-cyan-400 font-bold">${val}</span>
+        </div>
+      `).join('');
+
+      // Tech Tags
+      const tagsContainer = document.getElementById('pipeline-tech-tags');
+      tagsContainer.innerHTML = data.techTags.map(tag => `
+        <span class="px-2.5 py-1 rounded-md text-[10px] font-mono bg-slate-800 text-cyan-300 border border-slate-700">${tag}</span>
+      `).join('');
+
+      // Controls Bar
+      document.getElementById('pipeline-ctrl-bar').innerHTML = data.controls;
+    }
+
+    // ==========================================
+    // CARTOON DRAWING HELPERS (rounded, playful, built for non-technical viewers)
+    // ==========================================
+    function toonRoundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(x, y, w, h, r);
+      } else {
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+      }
+    }
+
+    // A comic-style speech/label bubble — used everywhere instead of monospace debug text
+    function toonBubble(ctx, text, cx, y, opts = {}) {
+      const font = opts.font || "bold 14px 'Baloo 2', sans-serif";
+      ctx.font = font;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const paddingX = 14;
+      const textW = ctx.measureText(text).width;
+      const w = Math.min(textW + paddingX * 2, 440);
+      const h = 30;
+      const x = cx - w / 2;
+      ctx.fillStyle = opts.bg || 'rgba(15, 23, 42, 0.92)';
+      ctx.strokeStyle = opts.border || '#334155';
+      ctx.lineWidth = 1.5;
+      toonRoundRect(ctx, x, y, w, h, 15);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = opts.color || '#f8fafc';
+      ctx.fillText(text, cx, y + h / 2 + 1);
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+    }
+
+    function toonEmoji(ctx, emoji, x, y, size) {
+      ctx.font = `${size}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(emoji, x, y);
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+    }
+
+    // A cute round character with two dot eyes and a smile — the recurring "cast" of the pipeline
+    function toonFace(ctx, x, y, r, fill, opts = {}) {
+      ctx.save();
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      if (opts.stroke) {
+        ctx.lineWidth = opts.strokeWidth || 3;
+        ctx.strokeStyle = opts.stroke;
+        ctx.stroke();
+      }
+      const eyeDx = r * 0.35, eyeDy = -r * 0.08, eyeR = Math.max(2, r * 0.13);
+      ctx.fillStyle = '#0b1220';
+      ctx.beginPath(); ctx.arc(x - eyeDx, y + eyeDy, eyeR, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + eyeDx, y + eyeDy, eyeR, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath();
+      ctx.lineWidth = Math.max(2, r * 0.07);
+      ctx.strokeStyle = '#0b1220';
+      ctx.arc(x, y + r * 0.05, r * 0.35, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function smoothstep(t) {
+      t = Math.max(0, Math.min(1, t));
+      return t * t * (3 - 2 * t);
+    }
+
+    // Fixed (non-random) scene data so the cartoon stays stable frame-to-frame
+    const stage2Points = Array.from({ length: 22 }, (_, i) => ({
+      x: 46 + i * 18,
+      isNoisy: i % 6 === 1
+    }));
+
+    const stage3Clusters = [
+      { x: 60,  y: 70,  emoji: '🛣️', label: 'Road!',   col: '#a855f7' },
+      { x: 150, y: 110, emoji: '🚗', label: 'Car!',    col: '#06b6d4' },
+      { x: 230, y: 60,  emoji: '🚶', label: 'Person!', col: '#f59e0b' },
+      { x: 310, y: 130, emoji: '🌳', label: 'Tree!',   col: '#10b981' },
+      { x: 390, y: 80,  emoji: '🛣️', label: 'Road!',   col: '#a855f7' },
+      { x: 130, y: 190, emoji: '🌳', label: 'Tree!',   col: '#10b981' },
+      { x: 270, y: 200, emoji: '🚗', label: 'Car!',    col: '#06b6d4' },
+      { x: 360, y: 220, emoji: '🚶', label: 'Person!', col: '#f59e0b' }
+    ];
+
+    // PIPELINE CANVAS RENDER ENGINE
+    function initPipelineCanvas() {
+      const canvas = document.getElementById('pipelineCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let frame = 0;
+
+      function renderPipelineStage() {
+        frame++;
+        const w = canvas.width;
+        const h = canvas.height;
+        const cx = w / 2;
+        const cy = h / 2;
+
+        ctx.clearRect(0, 0, w, h);
+
+        if (activePipelineStep === 1) {
+          // ============ STAGE 1: A friendly sensor "feels" the world with light ============
+          const sensorX = 80, sensorY = cy;
+
+          // gentle outward "ping" rings, like sonar
+          for (let p = 0; p < 3; p++) {
+            const pr = (frame * 2.2 + p * 70) % 210;
+            const alpha = Math.max(0, 1 - pr / 210);
+            ctx.beginPath();
+            ctx.arc(sensorX, sensorY, pr, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(6, 182, 212, ${alpha * 0.35})`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+
+          // three cartoon objects at near / mid / far distance
+          const objects = [
+            { x: 190, y: cy - 40, emoji: '🚙', label: 'Car' },
+            { x: 300, y: cy + 45, emoji: '🌳', label: 'Tree' },
+            { x: 410, y: cy - 10, emoji: '🏢', label: 'Building' }
+          ];
+
+          objects.forEach((obj, idx) => {
+            const bob = Math.sin(frame * 0.05 + idx) * 4;
+            const oy = obj.y + bob;
+
+            // a light ray from the sensor to the object
+            ctx.strokeStyle = 'rgba(6, 182, 212, 0.18)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(sensorX, sensorY); ctx.lineTo(obj.x, oy); ctx.stroke();
+
+            // a little flash of light travelling out and bouncing back
+            const cycle = 90;
+            const t = (frame + idx * 30) % cycle;
+            const travel = t < cycle / 2 ? t / (cycle / 2) : 2 - t / (cycle / 2);
+            const lx = sensorX + (obj.x - sensorX) * travel;
+            const ly = sensorY + (oy - sensorY) * travel;
+            ctx.fillStyle = '#67e8f9';
+            ctx.beginPath(); ctx.arc(lx, ly, 4, 0, Math.PI * 2); ctx.fill();
+
+            // a little spark burst right when the light "arrives"
+            if (travel > 0.93) {
+              ctx.strokeStyle = '#a7f3d0';
+              ctx.lineWidth = 2;
+              for (let s = 0; s < 6; s++) {
+                const ang = (s / 6) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(obj.x + Math.cos(ang) * 14, oy + Math.sin(ang) * 14);
+                ctx.lineTo(obj.x + Math.cos(ang) * 22, oy + Math.sin(ang) * 22);
+                ctx.stroke();
+              }
+            }
+
+            // occasional glitchy noisy reading, only shown when noise is toggled on
+            if (pipelineCanvasNoise && idx === 1 && Math.floor(frame / 40) % 2 === 0) {
+              const jitterX = obj.x + Math.sin(frame * 0.9) * 10;
+              const jitterY = oy - 46 + Math.cos(frame * 0.7) * 4;
+              ctx.fillStyle = '#f43f5e';
+              ctx.beginPath(); ctx.arc(jitterX, jitterY, 3, 0, Math.PI * 2); ctx.fill();
+              toonBubble(ctx, '⚠️ noisy reading', jitterX, jitterY - 26, { bg: 'rgba(244,63,94,0.15)', border: '#f43f5e', color: '#fecdd3', font: "bold 11px 'Baloo 2', sans-serif" });
+            }
+
+            // the object itself: a soft rounded badge with an emoji
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.beginPath(); ctx.arc(obj.x, oy, 22, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.5; ctx.stroke();
+            toonEmoji(ctx, obj.emoji, obj.x, oy, 24);
+            toonBubble(ctx, obj.label, obj.x, oy + 32, { font: "bold 11px 'Baloo 2', sans-serif" });
+          });
+
+          // the sensor character itself, with a little antenna
+          toonFace(ctx, sensorX, sensorY, 28, '#06b6d4', { stroke: '#a5f3fc' });
+          ctx.strokeStyle = '#a5f3fc'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(sensorX, sensorY - 28); ctx.lineTo(sensorX, sensorY - 40); ctx.stroke();
+          ctx.fillStyle = '#a5f3fc'; ctx.beginPath(); ctx.arc(sensorX, sensorY - 42, 3, 0, Math.PI * 2); ctx.fill();
+
+          toonBubble(ctx, pipelineCanvasNoise ? '📡 Sending light, catching a few glitches' : '📡 Every dot = light bouncing back!', cx, h - 34, { font: "bold 13px 'Baloo 2', sans-serif" });
+
+        } else if (activePipelineStep === 2) {
+          // ============ STAGE 2: A cartoon broom sweeps away the messy data ============
+          const groundTop = cy + 45;
+
+          // the "ground" — a friendly green strip once it's been found
+          ctx.fillStyle = pipelineGroundPlane ? 'rgba(16, 185, 129, 0.22)' : 'rgba(100, 116, 139, 0.12)';
+          toonRoundRect(ctx, 26, groundTop, w - 52, h - groundTop - 26, 18);
+          ctx.fill();
+          ctx.strokeStyle = pipelineGroundPlane ? '#10b981' : '#475569';
+          ctx.lineWidth = 2;
+          toonRoundRect(ctx, 26, groundTop, w - 52, h - groundTop - 26, 18);
+          ctx.stroke();
+
+          if (pipelineGroundPlane) {
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.55)';
+            ctx.lineWidth = 2;
+            for (let gx = 40; gx < w - 40; gx += 14) {
+              ctx.beginPath(); ctx.moveTo(gx, groundTop); ctx.lineTo(gx, groundTop - 6); ctx.stroke();
+            }
+            toonEmoji(ctx, '✅', w - 58, groundTop - 20, 22);
+            toonBubble(ctx, 'Ground found!', w - 58, groundTop - 42, { font: "bold 11px 'Baloo 2', sans-serif", bg: 'rgba(16,185,129,0.18)', border: '#10b981', color: '#a7f3d0' });
+          }
+
+          // the broom character sweeps left-to-right above the ground
+          const broomX = cx + Math.sin(frame * 0.035) * (w / 2 - 70);
+          const broomY = groundTop - 55;
+
+          // scattered points: blue = good data, red = noisy data that fades near the broom
+          stage2Points.forEach((pt, i) => {
+            const py = groundTop - 30 - ((i * 37) % 70);
+            const dist = Math.abs(pt.x - broomX);
+            const isBeingSwept = pt.isNoisy && dist < 55;
+            const shrink = isBeingSwept ? Math.max(0.15, dist / 55) : 1;
+            ctx.globalAlpha = pt.isNoisy ? (isBeingSwept ? shrink * 0.5 : 0.85) : 0.95;
+            ctx.fillStyle = pt.isNoisy ? '#f43f5e' : '#38bdf8';
+            ctx.beginPath();
+            ctx.arc(pt.x, py, (pt.isNoisy ? 3.5 : 3) * shrink, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+          });
+
+          // a little trash bin catching the swept-away noise
+          toonEmoji(ctx, '🗑️', 46, 40, 24);
+
+          // the broom character
+          ctx.save();
+          ctx.translate(broomX, broomY);
+          ctx.rotate(Math.sin(frame * 0.035) * 0.15);
+          ctx.strokeStyle = '#b45309'; ctx.lineWidth = 4;
+          ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(0, -34); ctx.stroke();
+          ctx.fillStyle = '#fbbf24';
+          toonRoundRect(ctx, -14, -6, 28, 16, 5); ctx.fill();
+          ctx.strokeStyle = '#92400e'; ctx.lineWidth = 1.5; ctx.stroke();
+          ctx.restore();
+          toonFace(ctx, broomX, broomY - 46, 16, '#fde68a', { stroke: '#b45309', strokeWidth: 2 });
+
+          toonBubble(ctx, pipelineGroundPlane ? '🧹 Sweeping away messy readings' : '🧹 Finding the ground first...', cx, h - 34, { font: "bold 13px 'Baloo 2', sans-serif" });
+
+        } else if (activePipelineStep === 3) {
+          // ============ STAGE 3: A cartoon "AI brain" names each object ============
+          const waveX = 40 + (frame * 2.2) % (w - 80);
+
+          const beamGrad = ctx.createLinearGradient(waveX - 26, 0, waveX + 26, 0);
+          beamGrad.addColorStop(0, 'rgba(168, 85, 247, 0)');
+          beamGrad.addColorStop(0.5, 'rgba(168, 85, 247, 0.18)');
+          beamGrad.addColorStop(1, 'rgba(168, 85, 247, 0)');
+          ctx.fillStyle = beamGrad;
+          ctx.fillRect(waveX - 26, 20, 52, h - 40);
+          ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(waveX, 20); ctx.lineTo(waveX, h - 20); ctx.stroke();
+
+          stage3Clusters.forEach(c => {
+            const progress = smoothstep((waveX - c.x) / 45 + 0.5);
+            if (progress < 0.05) {
+              // not yet scanned: a plain grey dot
+              ctx.fillStyle = '#475569';
+              ctx.beginPath(); ctx.arc(c.x, c.y, 4, 0, Math.PI * 2); ctx.fill();
+            } else {
+              const scale = 0.6 + progress * 0.4;
+              ctx.save();
+              ctx.translate(c.x, c.y);
+              ctx.scale(scale, scale);
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+              ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI * 2); ctx.fill();
+              ctx.strokeStyle = c.col; ctx.lineWidth = 2; ctx.stroke();
+              toonEmoji(ctx, c.emoji, 0, 0, 20);
+              ctx.restore();
+              if (progress > 0.5) {
+                ctx.globalAlpha = Math.min(1, (progress - 0.5) * 2.4);
+                toonBubble(ctx, c.label, c.x, c.y + 30, { font: "bold 11px 'Baloo 2', sans-serif", border: c.col, color: c.col });
+                ctx.globalAlpha = 1;
+              }
+            }
+          });
+
+          // the brain character riding along the top of the scanning beam
+          const brainY = 34;
+          toonFace(ctx, waveX, brainY, 20, '#c084fc', { stroke: '#f3e8ff' });
+          ctx.strokeStyle = '#f3e8ff'; ctx.lineWidth = 2;
+          for (let f = -1; f <= 1; f += 2) {
+            ctx.beginPath();
+            ctx.moveTo(waveX + f * 10, brainY - 16);
+            ctx.quadraticCurveTo(waveX + f * 18, brainY - 26, waveX + f * 8, brainY - 30);
+            ctx.stroke();
+          }
+          toonEmoji(ctx, '🔎', waveX + 22, brainY + 10, 16);
+
+          toonBubble(ctx, '🧠 Naming every dot: car, person, tree, road...', cx, h - 30, { font: "bold 13px 'Baloo 2', sans-serif" });
+
+        } else if (activePipelineStep === 4) {
+          // ============ STAGE 4: Zoom in close, stay coarse far away — just like eyes ============
+          const rings = [
+            { r: 46, col: '#06b6d4', fill: 'rgba(6, 182, 212, 0.10)', cell: 10 },
+            { r: 100, col: '#3b82f6', fill: 'rgba(59, 130, 246, 0.08)', cell: 20 },
+            { r: 154, col: '#64748b', fill: 'rgba(100, 116, 139, 0.06)', cell: 34 }
+          ];
+
+          for (let i = rings.length - 1; i >= 0; i--) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, rings[i].r, 0, Math.PI * 2);
+            ctx.fillStyle = foveatedRingsHighlight ? rings[i].fill : 'rgba(100,116,139,0.05)';
+            ctx.fill();
+          }
+
+          // grid cells clipped to each ring band, so you can *see* the resolution change
+          rings.forEach((ring, i) => {
+            const innerR = i === 0 ? 0 : rings[i - 1].r;
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, ring.r, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.strokeStyle = foveatedRingsHighlight ? ring.col + '55' : '#334155';
+            ctx.lineWidth = 1;
+            for (let gx = cx - ring.r; gx <= cx + ring.r; gx += ring.cell) {
+              for (let gy = cy - ring.r; gy <= cy + ring.r; gy += ring.cell) {
+                const d = Math.hypot(gx - cx, gy - cy);
+                if (d >= innerR) ctx.strokeRect(gx, gy, ring.cell, ring.cell);
+              }
+            }
+            ctx.restore();
+          });
+
+          // a soft highlight ring sweeping outward to draw the eye across the zones
+          const sweepR = (frame * 1.2) % 160;
+          ctx.beginPath();
+          ctx.arc(cx, cy, sweepR, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(255,255,255,${Math.max(0, 0.5 - sweepR / 320)})`;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // the friendly "eye" character at the centre
+          ctx.fillStyle = '#f8fafc';
+          ctx.beginPath(); ctx.arc(cx, cy, 16, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#0e7490';
+          ctx.beginPath(); ctx.arc(cx, cy, 9, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#0b1220';
+          ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fill();
+
+          // magnifying glass close by, binoculars far away
+          toonEmoji(ctx, '🔍', cx + 34, cy - 34, 22);
+          toonEmoji(ctx, '🔭', cx + 118, cy - 108, 22);
+
+          toonBubble(ctx, '👀 Sharp up close, rough far away — just like your eyes', cx, h - 30, { font: "bold 12.5px 'Baloo 2', sans-serif" });
+
+        } else if (activePipelineStep === 5) {
+          // ============ STAGE 5: Building the final, lightweight 2.5D map ============
+          const gridCols = 8, gridRows = 5;
+          const cellW = 32, cellH = 16;
+          const cycle = frame % 200;
+
+          for (let r = 0; r < gridRows; r++) {
+            for (let c = 0; c < gridCols; c++) {
+              const isoX = cx + (c - r) * (cellW / 2);
+              const isoY = 70 + (c + r) * (cellH / 2);
+              const delay = (r + c) * 8;
+              const progress = smoothstep((cycle - delay) / 45);
+              if (progress <= 0) continue;
+
+              const wobble = Math.sin(c + r + frame * 0.05) * 0.5 + 0.5;
+              let blockHeight = 10 + wobble * 22;
+              let topColor = 'rgba(16, 185, 129, 0.55)';
+              const occupied = (r * 3 + c * 2) % 5 === 0;
+
+              if (layer25DView === 'height') {
+                topColor = wobble > 0.66 ? 'rgba(244, 63, 94, 0.55)' : wobble > 0.33 ? 'rgba(245, 158, 11, 0.55)' : 'rgba(16, 185, 129, 0.5)';
+              } else if (layer25DView === 'occupancy') {
+                topColor = occupied ? 'rgba(244, 63, 94, 0.55)' : 'rgba(6, 182, 212, 0.4)';
+                blockHeight = occupied ? 24 : 10;
+              }
+
+              const heightOffset = blockHeight * progress;
+              const bounce = progress > 0.85 ? Math.sin((progress - 0.85) * 40) * 2 : 0;
+
+              ctx.fillStyle = topColor;
+              ctx.beginPath();
+              ctx.moveTo(isoX, isoY - heightOffset - bounce);
+              ctx.lineTo(isoX + cellW / 2, isoY - cellH / 2 - heightOffset - bounce);
+              ctx.lineTo(isoX + cellW, isoY - heightOffset - bounce);
+              ctx.lineTo(isoX + cellW / 2, isoY + cellH / 2 - heightOffset - bounce);
+              ctx.closePath();
+              ctx.fill();
+              ctx.strokeStyle = '#07090e';
+              ctx.stroke();
+
+              if (progress > 0.9) {
+                if (r === 1 && c === 2) toonEmoji(ctx, '🏠', isoX + cellW / 2, isoY - heightOffset - 14, 16);
+                if (r === 3 && c === 5) toonEmoji(ctx, '🌳', isoX + cellW / 2, isoY - heightOffset - 12, 16);
+                if (r === 0 && c === 6) toonEmoji(ctx, '🚗', isoX + cellW / 2, isoY - heightOffset - 12, 14);
+              }
+            }
+          }
+
+          // a happy little robot admiring the finished map, once the build is mostly done
+          if (cycle > 150) {
+            const popIn = smoothstep((cycle - 150) / 30);
+            ctx.globalAlpha = popIn;
+            toonFace(ctx, w - 54, 44, 20, '#34d399', { stroke: '#d1fae5' });
+            toonEmoji(ctx, '👍', w - 30, 60, 16);
+            toonBubble(ctx, '✅ Map complete!', w - 54, 78, { font: "bold 11px 'Baloo 2', sans-serif", border: '#34d399', color: '#a7f3d0' });
+            ctx.globalAlpha = 1;
+          }
+
+          toonBubble(ctx, `🗺️ Building the ${layer25DView} map — light enough to run on the vehicle itself`, cx, h - 22, { font: "bold 11.5px 'Baloo 2', sans-serif" });
+        }
+
+        requestAnimationFrame(renderPipelineStage);
+      }
+
+      renderPipelineStage();
+    }
+
+    function togglePipelineCanvasNoise() {
+      pipelineCanvasNoise = !pipelineCanvasNoise;
+    }
+
+    function togglePipelineGroundPlane() {
+      pipelineGroundPlane = !pipelineGroundPlane;
+    }
+
+    function triggerNeuralWave() {
+      // Triggers visual scan
+    }
+
+    function toggleFoveatedRingsView() {
+      foveatedRingsHighlight = !foveatedRingsHighlight;
+    }
+
+    function toggle25DLayerMode() {
+      const modes = ['composite', 'height', 'occupancy'];
+      const nextIdx = (modes.indexOf(layer25DView) + 1) % modes.length;
+      layer25DView = modes[nextIdx];
+    }
+
+    // ==========================================
+    // SECTION 3: CHART.JS BENCHMARK INITIALIZATION
+    // ==========================================
+    function initBenchmarkChart() {
+      const ctx = document.getElementById('benchmarkChart');
+      if (!ctx) return;
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Uniform 3D Grid', 'Standard 2D Grid', 'Our Foveated 2.5D Grid'],
+          datasets: [{
+            label: 'RAM Memory Usage (MB)',
+            data: [1800, 12, 45],
+            backgroundColor: [
+              'rgba(244, 63, 94, 0.75)',
+              'rgba(100, 116, 139, 0.75)',
+              'rgba(6, 182, 212, 0.85)'
+            ],
+            borderColor: [
+              '#f43f5e',
+              '#64748b',
+              '#06b6d4'
+            ],
+            borderWidth: 1.5,
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return ` ${context.raw} MB Memory`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              type: 'logarithmic',
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8', font: { family: 'monospace' } }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#f8fafc', font: { weight: 'bold' } }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
